@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  bus:
+    build: ./bus
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - CLIENTES_URL=http://clientes:4001
+      - INVENTARIO_URL=http://inventario:4002
+      - PEDIDOS_URL=http://pedidos:4003
+      - VALID_TOKEN=token-secreto-123
+    networks:
+      - soa-network
+
+  clientes:
+    build: ./services/clientes
+    environment:
+      - PORT=4001
+    networks:
+      - soa-network
+
+  inventario:
+    build: ./services/inventario
+    environment:
+      - PORT=4002
+    networks:
+      - soa-network
+
+  pedidos:
+    build: ./services/pedidos
+    environment:
+      - PORT=4003
+    networks:
+      - soa-network
+
+networks:
+  soa-network:
+    driver: bridge
