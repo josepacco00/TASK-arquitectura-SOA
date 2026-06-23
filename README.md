@@ -27,6 +27,40 @@ graph TD
 
 El **Bus** es el único punto de entrada desde el exterior (puerto 3000). Los servicios internos solo son accesibles dentro de `soa-network` — sus puertos no están expuestos al host.
 
+## Flujo de orquestación — POST /pedido
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Consumidor
+    participant B as Bus (ESB)
+    participant CL as Servicio Clientes
+    participant IN as Servicio Inventario
+    participant P as Servicio Pedidos
+
+    C->>B: POST /pedido {cliente_id, producto_id}
+    B->>CL: GET /clientes/{cliente_id}
+    alt cliente no existe
+        CL-->>B: 404 Not Found
+        B-->>C: 404 {"error": "Cliente no encontrado"}
+    else cliente existe
+        CL-->>B: 200 {id, nombre, email}
+        B->>IN: GET /stock/{producto_id}
+        alt sin stock
+            IN-->>B: 200 {stock: 0}
+            B-->>C: 409 {"error": "Sin stock disponible"}
+        else stock insuficiente
+            IN-->>B: 200 {stock: N}
+            B-->>C: 409 {"error": "Stock insuficiente"}
+        else stock disponible
+            IN-->>B: 200 {producto_id, stock}
+            B->>P: POST /pedido {cliente_id, producto_id}
+            P-->>B: 201 {pedido_id, cliente_id, producto_id, timestamp}
+            B-->>C: 201 {pedido_id, cliente_id, producto_id, timestamp}
+        end
+    end
+```
+
 ---
 
 ## Cómo usar
